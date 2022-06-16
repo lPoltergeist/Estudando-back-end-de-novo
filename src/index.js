@@ -1,41 +1,123 @@
 const express = require('express');
+const cors = require('cors');
+const { v4: uuid } = require('uuid');
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
-app.get("/courses", (request, response) => {
-    const query = request.query;
-    console.log(query);
-    return response.json(["curso 1", "curso 2", "curso 3"]);
-})
+const users = [];
 
-app.post("/courses", (request, response) => {
-    const body = request.body;
-    console.log(body);
-    return response.json(["curso 1", "curso 2", "curso 3", "curso 4"]);
-})
+function checksExistsUserAccount(request, response, next) {
+  
+  const {username} = request.headers;
+  const user = users.find((user) => user.username === username)
 
-app.put("/courses/:id", (request, response) => {
-    const params = request.params;
-    console.log(params);
-    return response.json(["curso 6", "curso 2", "curso 3", "curso 4"]);
-})
+  if (!user) {
+    return response.status(400).json({error: "user not found"});
+  }
 
-app.patch("/courses/:id", (request, response) => {
-    return response.json(["curso 6", "curso 7", "curso 3", "curso 4"]);
-})
+  request.user = user;
 
-app.delete("/courses/:id", (request, response) => {
-    return response.json(["curso 6", "curso 7", "curso 4"]);
-})
+  return next();
+}
 
-app.listen(1988);
+app.post('/users', (request, response) => {
+  
+ const {name, username} = request.body;
 
-/**
- * TIpos de parâmetros
- * 
- * route params = identificar um recurso editar/deletar/buscar.
- * query params = paginação/filtro
- * body params = os objetos inserção/alteração (JSON)
- */
+ const userNameAlreadyExists = users.some((user) => user.username === username);
+ 
+ if (userNameAlreadyExists) {
+  return response.status(400).json({error:'username already exist.'});
+ }
+
+ users.push({
+  id: uuid(),
+  username,
+  name,
+  todo: []
+ })
+
+  return response.status(201).send('funcionou');
+});
+
+app.get('/todos', checksExistsUserAccount, (request, response) => {
+  
+  const {user} = request;
+  
+  return response.status(201).json(user.todo);
+});
+
+app.post('/todos', checksExistsUserAccount, (request, response) => {
+  
+ const {title, deadline} = request.body;
+ const {user} = request;
+
+ const todo = {
+    id: uuid(),
+    title,
+    done: false,
+    deadline: new Date(deadline),
+    created_at: new Date(),
+    }
+
+    user.todo.push(todo);
+
+    return response.status(201).send(todo);
+});
+
+app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
+  
+  const { user } = request;
+  const { id } = request.params;
+  const { title, deadline } = request.body;
+  
+  const todo = user.todo.find((todo) => todo.id === id);
+
+  if (!todo) {
+    return response.status(400).send({error: "Todo does not exist or wrong id."})
+  }
+
+  todo.title = title;
+  todo.deadline = new Date(deadline);
+
+  return response.status(200).send(todo)
+
+});
+
+app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
+  
+  const { user } = request;
+  const { id } = request.params;
+
+const todo = user.todo.find((todo) => todo.id === id);
+
+if (!todo) {
+  return response.status(400).send({error: "Todo does not exist or wrong id."})
+}
+
+todo.done = true;
+
+return response.status(200).send(todo)
+
+
+});
+
+app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
+  
+  const {user} = request;
+  const { id } = request.params;
+
+  const todo = user.todo.find((todo) => todo.id === id);
+
+  if (!todo) {
+    return response.status(400).send({error: "Todo does not exist or wrong id."})
+  }
+
+   user.todo.splice(todo, 1);
+   return response.status(200).send()
+});
+
+module.exports = app;
