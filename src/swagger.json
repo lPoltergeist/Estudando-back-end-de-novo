@@ -1,0 +1,115 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Create and moderate users API",
+        "description": "A API to create and list users",
+        "version": "1.0.0",
+        "contact": {
+            "email": "gbmagalhaes1996@gmail.com"
+        }
+    },
+    "paths": {
+        "/users": {
+            "post": {
+                "tags": ["users"],
+                "summary": "create a user",
+                "description": "Create a new user without adm permission.",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": ["name", "email"],
+                                "type": "object",
+                                "properties": {
+                                    "name": "string"
+                                },
+                                "email": {
+                                    "type": "string"
+                                }
+                            },
+                            "example": {
+                                "name": "zézin",
+                                "email": "zezin@gmail.com"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Will create and return the user."
+                    },
+                    "500": {
+                        "description": "User already exists."
+
+                    }
+                }
+            }  
+        },
+        "/users/": {
+            "get": {
+                "tags": ["users"],
+                "summary": "Retorna lista de usuários",
+                "description": "Somente usuário administrador pode acessar.",
+                "parameters": [{
+                    "in": "header",
+                    "name": "user_id",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "success"
+                    },
+                    "400": {
+                        "description": "User does not have permission."
+                    }
+                }
+            }
+        },
+        "/users/{user_id}": {
+            "get": {
+                "tags": ["users"],
+                "summary": "Return the user by ID",
+                "description": "Will return the information of the user",
+                "parameters": [{
+                    "in": "path",
+                    "name": "user_id",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }],
+                "responses": {
+                    "200": {
+                        "description": "success"
+                    },
+                    "400": {
+                        "description": "User does not have permission or not exists."
+                    }
+                }
+            }
+        },
+        "/users/{user_id}/admin": {
+            "patch": {
+                "tags": ["users"],
+                "summary": "Transform a user in adm",
+                "description": "give a user adm permission.",
+                "parameters": [{
+                    "in": "path",
+                    "name": "user_id",
+                    "required": true,
+                    "type": "string",
+                    "format": "uuid"
+                }],
+                "responses": {
+                    "201": {
+                        "description": "User will turn to adm."
+                    },
+                    "500": {
+                        "description": "This user already is adm or dont exists."
+                    }
+                }
+            }
+        }
+    }
+}
